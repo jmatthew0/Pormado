@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -102,7 +103,7 @@ class ClothingItem {
   int worn;
   DateTime? lastWorn;
   DateTime addedAt;
-  String? imagePath; // local file path or http url
+  Uint8List? imageBytes; // cut-out photo (PNG) or original
   String emoji;
 
   ClothingItem({
@@ -123,14 +124,15 @@ class ClothingItem {
     this.worn = 0,
     this.lastWorn,
     DateTime? addedAt,
-    this.imagePath,
+    this.imageBytes,
     required this.emoji,
   }) : addedAt = addedAt ?? DateTime.now();
 
   Color get tile => category.tile;
   double get costPerWear => price / (worn == 0 ? 1 : worn);
   String get materialShort => material.split(RegExp(r'[ ·]')).first;
-  String get warmthLabel => ['Light', 'Breathable', 'Medium', 'Warm'][warmth.clamp(0, 3)];
+  String get warmthLabel =>
+      ['Light', 'Breathable', 'Medium', 'Warm'][warmth.clamp(0, 3)];
 
   String get lastWornLabel {
     if (lastWorn == null) return '—';
