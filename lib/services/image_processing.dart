@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart' show Color;
-import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart';
 
 class CutoutResult {
   final Uint8List bytes;
@@ -13,20 +15,20 @@ class CutoutResult {
 
 /// Background removal + colour detection for clothing photos.
 ///
-/// * If you pass a remove.bg key (`flutter run --dart-define=REMOVE_BG_KEY=xxxx`)
-///   the photo is cut out by remove.bg (best quality, works on any background).
-/// * Otherwise a built-in, offline cutout is used. It works best when the
-///   garment is laid flat on a plain surface (bed, floor, wall, white sheet).
+/// * iPhone (iOS 17+): uses Apple's on-device Vision "lift subject" model via a
+///   small native channel (see ios/Runner/AppDelegate.swift). Free, offline, high quality.
+/// * Everything else (Chrome, Android, older iOS): a basic offline cutout that
+///   works best for clothes on a plain surface.
 class ImageService {
-  static const String _removeBgKey = String.fromEnvironment('REMOVE_BG_KEY');
+  static const _channel = MethodChannel('pormado/cutout');
 
   static Future<CutoutResult> removeBackground(Uint8List original) async {
-    if (_removeBgKey.isNotEmpty) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
       try {
-        final r = await _removeBg(original);
-        return CutoutResult(r, true);
+        final r = await _channel.invokeMethod<Uint8List>('cutout', original);
+        if (r != null && r.isNotEmpty) return CutoutResult(r, true);
       } catch (_) {
-        // fall through to the local cutout
+        // fall back below
       }
     }
     try {
@@ -34,20 +36,6 @@ class ImageService {
     } catch (_) {
       return CutoutResult(original, false);
     }
-  }
-
-  static Future<Uint8List> _removeBg(Uint8List bytes) async {
-    final req = http.MultipartRequest(
-        'POST', Uri.parse('https://api.remove.bg/v1.0/removebg'))
-      ..headers['X-Api-Key'] = _removeBgKey
-      ..fields['size'] = 'auto'
-      ..fields['crop'] = 'true'
-      ..files.add(http.MultipartFile.fromBytes('image_file', bytes,
-          filename: 'item.jpg'));
-    final res = await req.send().timeout(const Duration(seconds: 40));
-    final body = await res.stream.toBytes();
-    if (res.statusCode != 200) throw Exception('remove.bg ${res.statusCode}');
-    return body;
   }
 
   /// Flood-fills the background from the photo's edges, makes it transparent
