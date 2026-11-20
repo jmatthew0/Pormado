@@ -66,6 +66,16 @@ class _GateState extends State<Gate> with WidgetsBindingObserver {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_started) return;
+    if (state == AppLifecycleState.resumed) context.read<AppState>().onResume();
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      context.read<AppState>().flush();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final a = context.watch<Auth>();
     if (!a.loaded) {

@@ -149,6 +149,56 @@ class ClothingItem {
     final d = DateTime.now().difference(lastWorn!).inDays;
     return '${d}d';
   }
+
+  /// The photo itself is saved as a separate file; JSON only notes that it exists.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'category': category.name,
+        'subtype': subtype,
+        'colorName': colorName,
+        'color': color.value,
+        'material': material,
+        'pattern': pattern,
+        'brand': brand,
+        'price': price,
+        'warmth': warmth,
+        'waterproof': waterproof,
+        'openShoes': openShoes,
+        'favorite': favorite,
+        'worn': worn,
+        'lastWorn': lastWorn?.toIso8601String(),
+        'addedAt': addedAt.toIso8601String(),
+        'emoji': emoji,
+        'photo': imageBytes != null,
+      };
+
+  factory ClothingItem.fromJson(Map<String, dynamic> j, Uint8List? bytes) =>
+      ClothingItem(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        category: Category.values.byName(j['category'] as String),
+        subtype: j['subtype'] as String,
+        colorName: j['colorName'] as String,
+        color: Color(j['color'] as int),
+        material: j['material'] as String,
+        pattern: (j['pattern'] as String?) ?? 'Solid',
+        brand: (j['brand'] as String?) ?? '',
+        price: ((j['price'] as num?) ?? 0).toDouble(),
+        warmth: (j['warmth'] as int?) ?? 1,
+        waterproof: (j['waterproof'] as bool?) ?? false,
+        openShoes: (j['openShoes'] as bool?) ?? false,
+        favorite: (j['favorite'] as bool?) ?? false,
+        worn: (j['worn'] as int?) ?? 0,
+        lastWorn: j['lastWorn'] == null
+            ? null
+            : DateTime.parse(j['lastWorn'] as String),
+        addedAt: j['addedAt'] == null
+            ? null
+            : DateTime.parse(j['addedAt'] as String),
+        imageBytes: bytes,
+        emoji: (j['emoji'] as String?) ?? '',
+      );
 }
 
 class Outfit {
@@ -164,4 +214,20 @@ class Outfit {
     this.occasion = 'Casual',
     this.favorite = false,
   });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'itemIds': itemIds,
+        'occasion': occasion,
+        'favorite': favorite,
+      };
+
+  factory Outfit.fromJson(Map<String, dynamic> j) => Outfit(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        itemIds: List<String>.from(j['itemIds'] as List),
+        occasion: (j['occasion'] as String?) ?? 'Casual',
+        favorite: (j['favorite'] as bool?) ?? false,
+      );
 }

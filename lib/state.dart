@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'models.dart';
 import 'services/location.dart';
 import 'services/weather.dart';
+import 'storage.dart';
 
 class AppState extends ChangeNotifier {
   String userName = 'Maya';
@@ -34,12 +37,105 @@ class AppState extends ChangeNotifier {
 
   final _rng = Random();
 
+  // Saving
+  bool _loaded = false;
+  Timer? _saveTimer;
+  final Set<String> _photoSaved = {};
+
   AppState();
 
   Future<void> init() async {
+    await load();
     await loadWeather();
     if (draft.isEmpty) shuffleDraft(notify: false);
     notifyListeners();
+  }
+
+  // ---------- Saving to the phone ----------
+  @override
+  void notifyListeners() {
+    super.notifyListeners();
+    if (_loaded) {
+      _saveTimer?.cancel();
+      _saveTimer = Timer(const Duration(milliseconds: 300), _save);
+    }
+  }
+
+  /// Saves right away (called when the app goes to the background).
+  Future<void> flush() async {
+    _saveTimer?.cancel();
+    if (_loaded) await _save();
+  }
+
+  Future<void> load() async {
+    if (_loaded) return;
+    try {
+      final j = await Storage.readJson();
+      if (j != null) {
+        items.clear();
+        outfits.clear();
+        plans.clear();
+        wornDays.clear();
+        for (final m in (j['items'] as List? ?? const [])) {
+          final map = Map<String, dynamic>.from(m as Map);
+          Uint8List? bytes;
+          if (map['photo'] == true) {
+            bytes = await Storage.readPhoto(map['id'] as String);
+            if (bytes != null) _photoSaved.add(map['id'] as String);
+          }
+          items.add(ClothingItem.fromJson(map, bytes));
+        }
+        for (final m in (j['outfits'] as List? ?? const [])) {
+          outfits.add(Outfit.fromJson(Map<String, dynamic>.from(m as Map)));
+        }
+        plans.addAll(Map<String, String>.from(j['plans'] as Map? ?? const {}));
+        wornDays.addAll(List<String>.from(j['wornDays'] as List? ?? const []));
+        final s = Map<String, dynamic>.from(j['settings'] as Map? ?? const {});
+        preferWaterproof = (s['preferWaterproof'] as bool?) ?? preferWaterproof;
+        comfort = (s['comfort'] as int?) ?? comfort;
+        sortMode = (s['sortMode'] as int?) ?? sortMode;
+        useGps = (s['useGps'] as bool?) ?? useGps;
+        draftOccasion = (s['draftOccasion'] as String?) ?? draftOccasion;
+        final cityName = s['city'] as String?;
+        for (final c in phCities) {
+          if (c.name == cityName) city = c;
+        }
+      }
+    } catch (_) {
+      // unreadable file: start fresh
+    }
+    _loaded = true;
+    notifyListeners();
+  }
+
+  Future<void> _save() async {
+    try {
+      final ids = items.map((e) => e.id).toSet();
+      for (final i in items) {
+        if (i.imageBytes != null && !_photoSaved.contains(i.id)) {
+          await Storage.writePhoto(i.id, i.imageBytes!);
+          _photoSaved.add(i.id);
+        }
+      }
+      for (final id in _photoSaved.where((id) => !ids.contains(id)).toList()) {
+        await Storage.deletePhoto(id);
+        _photoSaved.remove(id);
+      }
+      await Storage.writeJson({
+        'items': items.map((e) => e.toJson()).toList(),
+        'outfits': outfits.map((e) => e.toJson()).toList(),
+        'plans': plans,
+        'wornDays': wornDays.toList(),
+        'settings': {
+          'preferWaterproof': preferWaterproof,
+          'comfort': comfort,
+          'sortMode': sortMode,
+          'useGps': useGps,
+          'draftOccasion': draftOccasion,
+          'city': city.name,
+        },
+      });
+    } catch (_) {}
   }
 
   // ---------- Lookups ----------
@@ -156,7 +252,7 @@ class AppState extends ChangeNotifier {
   String get comfortLabel =>
       const ['Runs cold', 'Neutral', 'Runs warm'][comfort];
 
-  /// Target warmth (0 light … 3 warm) for current conditions.
+  /// Target warmth (0 light … 3 warm) for current Philippine conditions.
   int get targetWarmth {
     final f = weather?.feels ?? 32;
     var t = f >= 32
