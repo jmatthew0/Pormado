@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'models.dart';
+import 'services/location.dart';
 import 'services/weather.dart';
 
 class AppState extends ChangeNotifier {
@@ -13,7 +14,11 @@ class AppState extends ChangeNotifier {
   final ValueNotifier<int> tab = ValueNotifier<int>(0);
 
   // Weather
-  PhCity city = phCities.first;
+  PhCity city = phCities.first; // manual choice / fallback (Manila)
+  bool useGps = true;
+  bool locationDenied = false;
+  PhCity? gpsPlace;
+  DateTime? _lastLoad;
   Weather? weather;
   bool weatherLoading = false;
   bool preferWaterproof = true;
@@ -91,20 +96,50 @@ class AppState extends ChangeNotifier {
   }
 
   // ---------- Weather ----------
-  Future<void> loadWeather() async {
-    weatherLoading = true;
-    notifyListeners();
-    try {
-      weather = await Weather.fetch(city);
-    } catch (_) {
-      weather = Weather.fallback(city);
+  Future<void> loadWeather({bool silent = false}) async {
+    if (!silent) {
+      weatherLoading = true;
+      notifyListeners();
     }
+    var place = city;
+    if (useGps) {
+      final g = await LocationService.current();
+      if (g != null) {
+        gpsPlace = g;
+        locationDenied = false;
+        place = g;
+      } else {
+        locationDenied = true;
+      }
+    }
+    try {
+      weather = await Weather.fetch(place);
+    } catch (_) {
+      weather = Weather.fallback(place);
+    }
+    _lastLoad = DateTime.now();
     weatherLoading = false;
     notifyListeners();
   }
 
+  /// Called when the app returns to the foreground: follows you if you moved.
+  Future<void> onResume() async {
+    if (!useGps) return;
+    final l = _lastLoad;
+    if (l != null && DateTime.now().difference(l) < const Duration(minutes: 2))
+      return;
+    await loadWeather(silent: true);
+  }
+
   void setCity(PhCity c) {
     city = c;
+    useGps = false;
+    locationDenied = false;
+    loadWeather();
+  }
+
+  void useMyLocation() {
+    useGps = true;
     loadWeather();
   }
 
@@ -121,7 +156,7 @@ class AppState extends ChangeNotifier {
   String get comfortLabel =>
       const ['Runs cold', 'Neutral', 'Runs warm'][comfort];
 
-  /// Target warmth (0 light … 3 warm) for current Philippine conditions.
+  /// Target warmth (0 light … 3 warm) for current conditions.
   int get targetWarmth {
     final f = weather?.feels ?? 32;
     var t = f >= 32

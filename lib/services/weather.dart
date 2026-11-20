@@ -79,7 +79,8 @@ class Weather {
 
   bool get rainy => rainMax >= 50;
   String get condition => labelForCode(code);
-  String get summary => rainy ? '$condition · Rain around $rainHour' : condition;
+  String get summary =>
+      rainy ? '$condition · Rain around $rainHour' : condition;
 
   String get tip {
     if (rainy) return 'Pack a rain jacket for $rainHour';
@@ -110,7 +111,8 @@ class Weather {
 
   static Weather fallback(PhCity c) {
     final now = DateTime.now();
-    String h(int k) => k == 0 ? 'Now' : DateFormat('h a').format(now.add(Duration(hours: k)));
+    String h(int k) =>
+        k == 0 ? 'Now' : DateFormat('h a').format(now.add(Duration(hours: k)));
     return Weather(
       city: c.name,
       temp: 31,
@@ -138,10 +140,11 @@ class Weather {
     final uri = Uri.https('api.open-meteo.com', '/v1/forecast', {
       'latitude': '${c.lat}',
       'longitude': '${c.lon}',
-      'current': 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m',
+      'current':
+          'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m',
       'hourly': 'temperature_2m,weather_code,precipitation_probability',
       'daily': 'temperature_2m_max,temperature_2m_min',
-      'timezone': 'Asia/Manila',
+      'timezone': 'auto',
       'forecast_days': '2',
     });
     final r = await http.get(uri).timeout(const Duration(seconds: 10));
