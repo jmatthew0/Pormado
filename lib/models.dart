@@ -27,6 +27,16 @@ extension CategoryX on Category {
         Category.accessories => '🕶️',
       };
 
+  IconData get icon => switch (this) {
+        Category.tops => Icons.checkroom_outlined,
+        Category.bottoms => Icons.dry_cleaning_outlined,
+        Category.outerwear => Icons.layers_outlined,
+        Category.shoes => Icons.directions_walk,
+        Category.bags => Icons.shopping_bag_outlined,
+        Category.dresses => Icons.woman,
+        Category.accessories => Icons.watch_outlined,
+      };
+
   Color get tile => switch (this) {
         Category.tops => const Color(0xFFF1ECE4),
         Category.bottoms => const Color(0xFFEAEDF4),

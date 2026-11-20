@@ -208,8 +208,17 @@ class _AddItemScreenState extends State<AddItemScreen> {
                                 child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text(category.emoji,
-                                          style: const TextStyle(fontSize: 64)),
+                                      Container(
+                                        width: 76,
+                                        height: 76,
+                                        decoration: const BoxDecoration(
+                                            color: C.sage,
+                                            shape: BoxShape.circle),
+                                        child: const Icon(
+                                            Icons.add_a_photo_outlined,
+                                            color: C.green,
+                                            size: 34),
+                                      ),
                                       const SizedBox(height: 10),
                                       Text('Add a photo of your piece',
                                           style: sans(15, color: C.muted)),

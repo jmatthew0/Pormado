@@ -205,7 +205,8 @@ class ItemThumb extends StatelessWidget {
   Widget build(BuildContext context) {
     final b = item.imageBytes;
     final Widget child = b == null
-        ? Text(item.emoji, style: TextStyle(fontSize: emojiSize))
+        ? Icon(item.category.icon,
+            size: emojiSize * .9, color: C.green.withOpacity(.5))
         : Image.memory(b, fit: BoxFit.contain, gaplessPlayback: true);
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
