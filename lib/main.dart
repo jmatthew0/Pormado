@@ -8,12 +8,17 @@ import 'screens/outfits_screen.dart';
 import 'screens/wardrobe_screen.dart';
 import 'state.dart';
 import 'ui.dart';
+import 'auth.dart';
+import 'screens/auth_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppState()..init(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppState()),
+        ChangeNotifierProvider(create: (_) => Auth()..load()),
+      ],
       child: const PormadoApp(),
     ),
   );
@@ -34,8 +39,52 @@ class PormadoApp extends StatelessWidget {
         textTheme: GoogleFonts.interTextTheme(),
         splashFactory: InkRipple.splashFactory,
       ),
-      home: const Shell(),
+      home: const Gate(),
     );
+  }
+}
+
+class Gate extends StatefulWidget {
+  const Gate({super.key});
+  @override
+  State<Gate> createState() => _GateState();
+}
+
+class _GateState extends State<Gate> with WidgetsBindingObserver {
+  bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _started)
+      context.read<AppState>().onResume();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = context.watch<Auth>();
+    if (!a.loaded) {
+      return const Scaffold(
+          body: Center(child: CircularProgressIndicator(color: C.green)));
+    }
+    if (!a.signedIn) return const AuthScreen();
+    if (!_started) {
+      _started = true;
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => context.read<AppState>().init());
+    }
+    return const Shell();
   }
 }
 
@@ -53,11 +102,15 @@ class Shell extends StatelessWidget {
           return Expanded(
             child: InkWell(
               onTap: () => s.tab.value = idx,
-              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(icon, size: 24, color: on ? C.green : const Color(0xFFA8A49B)),
-                const SizedBox(height: 3),
-                Text(label, style: sans(11, color: on ? C.green : C.muted)),
-              ]),
+              child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon,
+                        size: 24,
+                        color: on ? C.green : const Color(0xFFA8A49B)),
+                    const SizedBox(height: 3),
+                    Text(label, style: sans(11, color: on ? C.green : C.muted)),
+                  ]),
             ),
           );
         }
@@ -69,12 +122,14 @@ class Shell extends StatelessWidget {
             OutfitsScreen(),
             CalendarScreen(),
           ]),
-          floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
           floatingActionButton: FloatingActionButton(
             backgroundColor: C.green,
             foregroundColor: Colors.white,
             shape: const CircleBorder(),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddItemScreen())),
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const AddItemScreen())),
             child: const Icon(Icons.add, size: 30),
           ),
           bottomNavigationBar: BottomAppBar(

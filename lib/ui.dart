@@ -409,3 +409,48 @@ Future<ClothingItem?> pickItem(BuildContext context,
     ),
   );
 }
+
+class AppField extends StatelessWidget {
+  const AppField({
+    super.key,
+    required this.label,
+    required this.controller,
+    this.type,
+    this.obscure = false,
+    this.suffix,
+    this.onSubmitted,
+  });
+  final String label;
+  final TextEditingController controller;
+  final TextInputType? type;
+  final bool obscure;
+  final Widget? suffix;
+  final VoidCallback? onSubmitted;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: sans(13, color: C.muted)),
+          const SizedBox(height: 6),
+          Container(
+            decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: C.line)),
+            child: TextField(
+              controller: controller,
+              keyboardType: type,
+              obscureText: obscure,
+              autocorrect: false,
+              style: sans(16),
+              onSubmitted: onSubmitted == null ? null : (_) => onSubmitted!(),
+              decoration: InputDecoration(
+                  border: InputBorder.none,
+                  suffixIcon: suffix,
+                  contentPadding: const EdgeInsets.all(16)),
+            ),
+          ),
+        ]),
+      );
+}
