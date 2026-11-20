@@ -1,4 +1,4 @@
-# Pormado 👗
+# Pormado 
 
 A digital wardrobe: digitize your clothes, build outfits without opening your closet,
 plan them on a calendar, and get suggestions based on **Philippine weather**.
@@ -28,7 +28,7 @@ flutter run
 <key>NSPhotoLibraryUsageDescription</key><string>Choose clothing photos from your gallery.</string>
 ```
 
-## Weather (Philippines)
+## Weather 
 `lib/services/weather.dart` uses the free [Open-Meteo](https://open-meteo.com) API (no key), timezone
 `Asia/Manila`, °C and km/h. Pick Manila, Quezon City, Calamba, Baguio, Cebu, Iloilo or Davao from
 the weather screen. Rain risk (≥50% in the next 12h) drives the "bring an umbrella" advice and the

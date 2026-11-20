@@ -172,7 +172,7 @@ class ItemThumb extends StatelessWidget {
     Widget child;
     if (p == null) {
       child = Text(item.emoji, style: TextStyle(fontSize: emojiSize));
-    } else if (p.startsWith('http')) {
+    } else if ((p.startsWith('http') || p.startsWith('blob:'))) {
       child = Image.network(p, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Text(item.emoji, style: TextStyle(fontSize: emojiSize)));
     } else {
       child = Image.file(File(p), fit: BoxFit.contain);
