@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models.dart';
 import 'add_item_screen.dart';
+import 'outfit_detail_screen.dart';
 import '../state.dart';
 import '../ui.dart';
 
@@ -239,7 +240,10 @@ class _OutfitsScreenState extends State<OutfitsScreen> {
           padding: const EdgeInsets.only(bottom: 14),
           child: Panel(
             radius: 26,
-            onTap: () => _actions(context, s, o),
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => OutfitDetailScreen(outfitId: o.id))),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               OutfitStrip(s.itemsOf(o), height: 96, emoji: 32),
@@ -266,77 +270,5 @@ class _OutfitsScreenState extends State<OutfitsScreen> {
           ),
         ),
     ]);
-  }
-
-  void _actions(BuildContext context, AppState s, Outfit o) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: C.bg,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(o.name, style: serif(22)),
-                const SizedBox(height: 8),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.check_circle_outline),
-                  title: const Text('Wear today'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    final ok = s.markWorn(DateTime.now(), o);
-                    snack(context,
-                        ok ? 'Logged for today' : 'Today is already logged');
-                  },
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.event),
-                  title: const Text('Plan for a day'),
-                  onTap: () async {
-                    Navigator.pop(ctx);
-                    final d = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate:
-                          DateTime.now().subtract(const Duration(days: 365)),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (d != null) {
-                      s.plan(d, o);
-                      if (context.mounted)
-                        snack(context, 'Planned in your calendar');
-                    }
-                  },
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.edit_outlined),
-                  title: const Text('Edit in builder'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    s.setDraft([...o.itemIds]);
-                    s.setOccasion(o.occasion);
-                    setState(() => seg = 0);
-                  },
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.delete_outline),
-                  title: const Text('Delete'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    s.deleteOutfit(o);
-                  },
-                ),
-              ]),
-        ),
-      ),
-    );
   }
 }

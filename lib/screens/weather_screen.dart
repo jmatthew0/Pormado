@@ -83,17 +83,18 @@ class WeatherScreen extends StatelessWidget {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text('${w.temp}°',
+                                        Text(Units.deg(w.temp),
                                             style: serif(72,
                                                 color: Colors.white,
                                                 w: FontWeight.w600)),
                                         const SizedBox(height: 6),
                                         Text(
-                                            '${w.condition} · Feels like ${w.feels}°',
+                                            '${w.condition} · Feels like ${Units.deg(w.feels)}',
                                             style:
                                                 sans(15, color: Colors.white)),
                                         const SizedBox(height: 4),
-                                        Text('H ${w.high}° · L ${w.low}°',
+                                        Text(
+                                            'H ${Units.deg(w.high)} · L ${Units.deg(w.low)}',
                                             style: sans(13,
                                                 color: Colors.white70)),
                                       ]),
@@ -146,7 +147,7 @@ class WeatherScreen extends StatelessWidget {
                                             color: colorForCode(h.code),
                                             size: 26),
                                         const SizedBox(height: 8),
-                                        Text('${h.temp}°',
+                                        Text(Units.deg(h.temp),
                                             style:
                                                 sans(17, w: FontWeight.w700)),
                                       ]),

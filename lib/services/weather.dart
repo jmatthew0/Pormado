@@ -5,6 +5,19 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
 /// Philippine cities offered in the weather screen.
+/// Temperature unit used across the app (°C or °F). Values from the API are always °C.
+class Units {
+  static bool fahrenheit = false;
+  static int conv(int c) => fahrenheit ? (c * 9 / 5 + 32).round() : c;
+  static String deg(int c) => '${conv(c)}°';
+}
+
+class DayForecast {
+  final String date; // yyyy-MM-dd
+  final int high, low, code, rain;
+  const DayForecast(this.date, this.high, this.low, this.code, this.rain);
+}
+
 class PhCity {
   final String name;
   final double lat, lon;
@@ -60,6 +73,7 @@ class Weather {
   final List<HourSlot> hours;
   final DateTime updated;
   final bool offline;
+  final List<DayForecast> days;
 
   const Weather({
     required this.city,
@@ -75,6 +89,7 @@ class Weather {
     required this.hours,
     required this.updated,
     this.offline = false,
+    this.days = const [],
   });
 
   bool get rainy => rainMax >= 50;
@@ -84,7 +99,7 @@ class Weather {
 
   String get tip {
     if (rainy) return 'Pack a rain jacket for $rainHour';
-    if (feels >= 34) return 'Go breathable – it feels like $feels°';
+    if (feels >= 34) return 'Go breathable – it feels like ${Units.deg(feels)}';
     if (temp <= 22) return 'Add a light layer – it\'s cool out';
     return 'Easy day – light layers will do';
   }
@@ -101,10 +116,10 @@ class Weather {
       return 'Rain is likely around $rainHour ($rainMax%). Waterproof outerwear and closed shoes (or slides that can get wet) are the smart pick.';
     }
     if (feels >= 34) {
-      return 'It feels like $feels° with $humidity% humidity. Choose linen or cotton and skip heavy layers.';
+      return 'It feels like ${Units.deg(feels)} with $humidity% humidity. Choose linen or cotton and skip heavy layers.';
     }
     if (temp <= 22) {
-      return 'Temperatures dip to $low°. A light jacket or knit works well.';
+      return 'Temperatures dip to ${Units.deg(low)}. A light jacket or knit works well.';
     }
     return 'Conditions are mild. Most of your wardrobe will work today.';
   }
@@ -143,9 +158,10 @@ class Weather {
       'current':
           'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m',
       'hourly': 'temperature_2m,weather_code,precipitation_probability',
-      'daily': 'temperature_2m_max,temperature_2m_min',
+      'daily':
+          'temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max',
       'timezone': 'auto',
-      'forecast_days': '2',
+      'forecast_days': '7',
     });
     final r = await http.get(uri).timeout(const Duration(seconds: 10));
     if (r.statusCode != 200) throw Exception('Weather ${r.statusCode}');
@@ -176,6 +192,12 @@ class Weather {
       ));
     }
 
+    final dTimes = (daily['time'] as List).cast<String>();
+    final dMax = daily['temperature_2m_max'] as List;
+    final dMin = daily['temperature_2m_min'] as List;
+    final dCode = daily['weather_code'] as List;
+    final dRain = daily['precipitation_probability_max'] as List;
+
     var maxP = 0;
     var maxI = idx;
     for (var i = idx; i < min(idx + 13, times.length); i++) {
@@ -199,6 +221,11 @@ class Weather {
       rainHour: DateFormat('h a').format(DateTime.parse(times[maxI])),
       hours: hours,
       updated: DateTime.now(),
+      days: [
+        for (var i = 0; i < dTimes.length; i++)
+          DayForecast(dTimes[i], numAt(dMax, i), numAt(dMin, i),
+              numAt(dCode, i), numAt(dRain, i)),
+      ],
     );
   }
 }

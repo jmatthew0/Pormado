@@ -42,30 +42,89 @@ class _AuthScreenState extends State<AuthScreen> {
     });
   }
 
+  Widget _piece(IconData icon, Color bg, Color fg, double h) => Container(
+        width: 74,
+        height: h,
+        decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4)),
+            ]),
+        child: Icon(icon, color: fg, size: 34),
+      );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 36, 24, 32),
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
             children: [
-              Center(
-                child: Container(
-                  width: 76,
-                  height: 76,
-                  decoration: const BoxDecoration(
-                      color: C.green, shape: BoxShape.circle),
+              Row(children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                      color: C.green, borderRadius: BorderRadius.circular(12)),
                   child: const Icon(Icons.checkroom_rounded,
-                      color: Colors.white, size: 38),
+                      color: Colors.white, size: 22),
                 ),
-              ),
+                const SizedBox(width: 10),
+                Text('Pormado', style: serif(24)),
+              ]),
               const SizedBox(height: 18),
-              Center(child: Text('Pormado', style: serif(44))),
-              const SizedBox(height: 8),
-              Center(
-                  child: Text('Your closet, in your pocket.',
-                      style: sans(15, color: C.muted))),
-              const SizedBox(height: 28),
+              Container(
+                height: 190,
+                decoration: BoxDecoration(
+                    color: C.sand, borderRadius: BorderRadius.circular(28)),
+                child: Stack(children: [
+                  Center(
+                    child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          _piece(Icons.checkroom_outlined, Colors.white,
+                              C.green, 92),
+                          const SizedBox(width: 16),
+                          _piece(Icons.layers_outlined, const Color(0xFF1F2A44),
+                              Colors.white, 116),
+                          const SizedBox(width: 16),
+                          _piece(Icons.woman, const Color(0xFFB7C5A8),
+                              Colors.white, 130),
+                        ]),
+                  ),
+                  Positioned(
+                    left: 14,
+                    bottom: 14,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.wb_cloudy_rounded,
+                            size: 16, color: Color(0xFFE0AE4F)),
+                        const SizedBox(width: 6),
+                        Text('Weather-ready outfits',
+                            style: sans(12.5, w: FontWeight.w600)),
+                      ]),
+                    ),
+                  ),
+                ]),
+              ),
+              const SizedBox(height: 22),
+              Text('Dress for today,\nwithout opening\nyour closet.',
+                  style: serif(32)),
+              const SizedBox(height: 10),
+              Text(
+                  'Digitize your wardrobe, build outfits and get suggestions based on the weather.',
+                  style: sans(14.5, color: C.muted, height: 1.4)),
+              const SizedBox(height: 20),
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
@@ -100,45 +159,42 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                 ]),
               ),
-              const SizedBox(height: 18),
-              Panel(
-                radius: 28,
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 8),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(signup ? 'Create your wardrobe' : 'Welcome back',
-                          style: serif(24)),
-                      const SizedBox(height: 18),
-                      if (signup) AppField(label: 'Name', controller: nameC),
-                      AppField(
-                          label: 'Email',
-                          controller: emailC,
-                          type: TextInputType.emailAddress),
-                      AppField(
-                        label: 'Password',
-                        controller: passC,
-                        obscure: hide,
-                        onSubmitted: busy ? null : _submit,
-                        suffix: IconButton(
-                          icon: Icon(
-                              hide
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: C.muted),
-                          onPressed: () => setState(() => hide = !hide),
-                        ),
-                      ),
-                      if (error != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: Text(error!,
-                              style: sans(13.5,
-                                  color: C.terracotta, w: FontWeight.w600)),
-                        ),
-                    ]),
+              const SizedBox(height: 20),
+              if (signup)
+                AppField(
+                    label: 'Name',
+                    controller: nameC,
+                    hint: 'Your name',
+                    icon: Icons.person_outline),
+              AppField(
+                  label: 'Email',
+                  controller: emailC,
+                  type: TextInputType.emailAddress,
+                  hint: 'you@email.com',
+                  icon: Icons.mail_outline),
+              AppField(
+                label: 'Password',
+                controller: passC,
+                obscure: hide,
+                hint: '••••••••',
+                icon: Icons.lock_outline,
+                onSubmitted: busy ? null : _submit,
+                suffix: IconButton(
+                  icon: Icon(
+                      hide
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: C.muted),
+                  onPressed: () => setState(() => hide = !hide),
+                ),
               ),
-              const SizedBox(height: 18),
+              if (error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: Text(error!,
+                      style:
+                          sans(13.5, color: C.terracotta, w: FontWeight.w600)),
+                ),
               Btn(
                   busy
                       ? 'Please wait…'

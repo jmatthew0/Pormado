@@ -1,105 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../auth.dart';
 import '../services/weather.dart';
 import '../state.dart';
 import '../ui.dart';
+import 'settings_screen.dart';
 import 'weather_screen.dart';
-import '../auth.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  void _profile(BuildContext context) {
-    final auth = context.read<Auth>();
-    final s = context.read<AppState>();
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: C.bg,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  CircleAvatar(
-                      radius: 28,
-                      backgroundColor: C.terracotta,
-                      child: Text(auth.initial,
-                          style: serif(24, color: Colors.white))),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(auth.guest ? 'Guest' : auth.name,
-                              style: serif(22)),
-                          Text(auth.guest ? 'Not using an account' : auth.email,
-                              style: sans(13, color: C.muted)),
-                        ]),
-                  ),
-                ]),
-                const SizedBox(height: 16),
-                Panel(
-                  radius: 20,
-                  child: Row(children: [
-                    const Icon(Icons.location_on_outlined, color: C.green),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        s.useGps
-                            ? 'Weather follows you: ${s.gpsPlace?.name ?? 'locating…'}'
-                            : 'Weather location: ${s.city.name}',
-                        style: sans(14),
-                      ),
-                    ),
-                  ]),
-                ),
-                const SizedBox(height: 16),
-                Btn('Sign out', icon: Icons.logout, style: BtnStyle.outline,
-                    onTap: () {
-                  Navigator.pop(ctx);
-                  auth.signOut();
-                }),
-                if (!auth.guest)
-                  Center(
-                    child: TextButton(
-                      onPressed: () async {
-                        final ok = await showDialog<bool>(
-                          context: ctx,
-                          builder: (d) => AlertDialog(
-                            backgroundColor: C.bg,
-                            title: Text('Delete account?', style: serif(20)),
-                            content: const Text(
-                                'This removes the account from this phone.'),
-                            actions: [
-                              TextButton(
-                                  onPressed: () => Navigator.pop(d, false),
-                                  child: const Text('Cancel')),
-                              TextButton(
-                                  onPressed: () => Navigator.pop(d, true),
-                                  child: const Text('Delete')),
-                            ],
-                          ),
-                        );
-                        if (ok == true) {
-                          if (ctx.mounted) Navigator.pop(ctx);
-                          auth.deleteAccount();
-                        }
-                      },
-                      child: Text('Delete account',
-                          style: sans(14, color: C.muted)),
-                    ),
-                  ),
-              ]),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +48,10 @@ class HomeScreen extends StatelessWidget {
                     onTap: () => snack(context, 'No new notifications')),
                 const SizedBox(width: 12),
                 GestureDetector(
-                  onTap: () => _profile(context),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SettingsScreen())),
                   child: CircleAvatar(
                     radius: 24,
                     backgroundColor: C.terracotta,
@@ -182,7 +95,7 @@ class HomeScreen extends StatelessWidget {
                                                     .copyWith(
                                                         letterSpacing: 1)),
                                             const SizedBox(height: 6),
-                                            Text('${w.temp}°',
+                                            Text(Units.deg(w.temp),
                                                 style: serif(64,
                                                     color: Colors.white,
                                                     w: FontWeight.w600)),
@@ -256,7 +169,7 @@ class HomeScreen extends StatelessWidget {
                                           style: sans(18, w: FontWeight.w700)),
                                       const SizedBox(height: 3),
                                       Text(
-                                        '${outfit.occasion} · ${outfit.itemIds.length} pieces · ${s.fitOf(outfit)}% fit${w == null ? '' : ' for ${w.temp}°'}',
+                                        '${outfit.occasion} · ${outfit.itemIds.length} pieces · ${s.fitOf(outfit)}% fit${w == null ? '' : ' for ${Units.deg(w.temp)}'}',
                                         style: sans(13, color: C.muted),
                                       ),
                                     ]),
