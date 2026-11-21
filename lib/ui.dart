@@ -205,8 +205,7 @@ class ItemThumb extends StatelessWidget {
   Widget build(BuildContext context) {
     final b = item.imageBytes;
     final Widget child = b == null
-        ? Icon(item.category.icon,
-            size: emojiSize * .9, color: C.green.withOpacity(.5))
+        ? Icon(item.icon, size: emojiSize * .9, color: C.green.withOpacity(.5))
         : Image.memory(b, fit: BoxFit.contain, gaplessPlayback: true);
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
@@ -287,7 +286,13 @@ class ItemCard extends StatelessWidget {
           ),
         ]),
         const SizedBox(height: 4),
-        Text('Worn ${item.worn}×', style: sans(12, color: C.muted)),
+        Text(
+          'Worn ${item.worn}×${(s.laundryTracking && item.wearsSinceWash >= 3) ? ' · Needs wash' : ''}',
+          style: sans(12,
+              color: (s.laundryTracking && item.wearsSinceWash >= 3)
+                  ? C.terracotta
+                  : C.muted),
+        ),
       ]),
     );
   }
@@ -361,7 +366,7 @@ Future<Outfit?> pickOutfit(BuildContext context,
 
 /// Bottom sheet to pick a single wardrobe piece.
 Future<ClothingItem?> pickItem(BuildContext context,
-    {Set<String> exclude = const {}}) {
+    {Set<String> exclude = const {}, Category? only}) {
   final s = context.read<AppState>();
   return showModalBottomSheet<ClothingItem>(
     context: context,
@@ -378,7 +383,8 @@ Future<ClothingItem?> pickItem(BuildContext context,
           padding: const EdgeInsets.all(20),
           children: [
             Text('Add a piece', style: serif(24)),
-            for (final c in Category.values)
+            for (final c
+                in Category.values.where((c) => only == null || c == only))
               if (s.byCategory(c).any((i) => !exclude.contains(i.id))) ...[
                 const SizedBox(height: 16),
                 Text(c.label,
@@ -420,6 +426,8 @@ class AppField extends StatelessWidget {
     this.obscure = false,
     this.suffix,
     this.onSubmitted,
+    this.hint,
+    this.icon,
   });
   final String label;
   final TextEditingController controller;
@@ -427,6 +435,8 @@ class AppField extends StatelessWidget {
   final bool obscure;
   final Widget? suffix;
   final VoidCallback? onSubmitted;
+  final String? hint;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -447,9 +457,14 @@ class AppField extends StatelessWidget {
               style: sans(16),
               onSubmitted: onSubmitted == null ? null : (_) => onSubmitted!(),
               decoration: InputDecoration(
-                  border: InputBorder.none,
-                  suffixIcon: suffix,
-                  contentPadding: const EdgeInsets.all(16)),
+                border: InputBorder.none,
+                hintText: hint,
+                hintStyle: sans(16, color: C.muted),
+                prefixIcon:
+                    icon == null ? null : Icon(icon, color: C.muted, size: 20),
+                suffixIcon: suffix,
+                contentPadding: const EdgeInsets.all(16),
+              ),
             ),
           ),
         ]),

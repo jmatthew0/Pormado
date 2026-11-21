@@ -49,12 +49,19 @@ extension CategoryX on Category {
 
   List<String> get subtypes => switch (this) {
         Category.tops => ['T-shirts', 'Shirts', 'Knitwear', 'Tanks'],
-        Category.bottoms => ['Jeans', 'Shorts', 'Trousers', 'Skirts'],
-        Category.outerwear => ['Blazers', 'Coats', 'Jackets'],
-        Category.shoes => ['Sneakers', 'Boots', 'Sandals'],
-        Category.bags => ['Totes', 'Crossbody', 'Backpacks'],
-        Category.dresses => ['Casual', 'Formal'],
-        Category.accessories => ['Umbrellas', 'Hats', 'Jewelry'],
+        Category.bottoms => ['Jeans', 'Trousers', 'Shorts', 'Skirts'],
+        Category.outerwear => ['Blazers', 'Coats', 'Jackets', 'Rain'],
+        Category.shoes => ['Sneakers', 'Boots', 'Heels', 'Sandals'],
+        Category.bags => ['Totes', 'Crossbody', 'Backpacks', 'Clutches'],
+        Category.dresses => ['Casual', 'Midi', 'Evening', 'Summer'],
+        Category.accessories => [
+            'Jewelry',
+            'Belts',
+            'Eyewear',
+            'Watches',
+            'Hats',
+            'Umbrellas'
+          ],
       };
 }
 
@@ -115,6 +122,9 @@ class ClothingItem {
   DateTime addedAt;
   Uint8List? imageBytes; // cut-out photo (PNG) or original
   String emoji;
+  String care;
+  List<String> seasons;
+  int wearsSinceWash;
 
   ClothingItem({
     required this.id,
@@ -136,11 +146,29 @@ class ClothingItem {
     DateTime? addedAt,
     this.imageBytes,
     required this.emoji,
+    this.care = '',
+    this.seasons = const [],
+    this.wearsSinceWash = 0,
   }) : addedAt = addedAt ?? DateTime.now();
 
   Color get tile => category.tile;
   double get costPerWear => price / (worn == 0 ? 1 : worn);
   String get materialShort => material.split(RegExp(r'[ ·]')).first;
+  IconData get icon {
+    if (category == Category.accessories) {
+      const m = {
+        'Jewelry': Icons.diamond_outlined,
+        'Eyewear': Icons.visibility_outlined,
+        'Belts': Icons.drag_handle,
+        'Watches': Icons.watch_outlined,
+        'Hats': Icons.sports_baseball_outlined,
+        'Umbrellas': Icons.umbrella_outlined,
+      };
+      return m[subtype] ?? category.icon;
+    }
+    return category.icon;
+  }
+
   String get warmthLabel =>
       ['Light', 'Breathable', 'Medium', 'Warm'][warmth.clamp(0, 3)];
 
@@ -170,6 +198,9 @@ class ClothingItem {
         'lastWorn': lastWorn?.toIso8601String(),
         'addedAt': addedAt.toIso8601String(),
         'emoji': emoji,
+        'care': care,
+        'seasons': seasons,
+        'wearsSinceWash': wearsSinceWash,
         'photo': imageBytes != null,
       };
 
@@ -198,6 +229,9 @@ class ClothingItem {
             : DateTime.parse(j['addedAt'] as String),
         imageBytes: bytes,
         emoji: (j['emoji'] as String?) ?? '',
+        care: (j['care'] as String?) ?? '',
+        seasons: List<String>.from((j['seasons'] as List?) ?? const []),
+        wearsSinceWash: (j['wearsSinceWash'] as int?) ?? 0,
       );
 }
 
@@ -207,13 +241,24 @@ class Outfit {
   List<String> itemIds;
   String occasion;
   bool favorite;
+  int worn;
+  DateTime? lastWorn;
+  DateTime createdAt;
+
   Outfit({
     required this.id,
     required this.name,
     required this.itemIds,
     this.occasion = 'Casual',
     this.favorite = false,
-  });
+    this.worn = 0,
+    this.lastWorn,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
+
+  String get lastWornLabel => lastWorn == null
+      ? '—'
+      : '${DateTime.now().difference(lastWorn!).inDays}d';
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -221,6 +266,9 @@ class Outfit {
         'itemIds': itemIds,
         'occasion': occasion,
         'favorite': favorite,
+        'worn': worn,
+        'lastWorn': lastWorn?.toIso8601String(),
+        'createdAt': createdAt.toIso8601String(),
       };
 
   factory Outfit.fromJson(Map<String, dynamic> j) => Outfit(
@@ -229,5 +277,12 @@ class Outfit {
         itemIds: List<String>.from(j['itemIds'] as List),
         occasion: (j['occasion'] as String?) ?? 'Casual',
         favorite: (j['favorite'] as bool?) ?? false,
+        worn: (j['worn'] as int?) ?? 0,
+        lastWorn: j['lastWorn'] == null
+            ? null
+            : DateTime.parse(j['lastWorn'] as String),
+        createdAt: j['createdAt'] == null
+            ? null
+            : DateTime.parse(j['createdAt'] as String),
       );
 }

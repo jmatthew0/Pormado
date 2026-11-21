@@ -78,6 +78,12 @@ class Auth extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateName(String n) async {
+    name = n.trim();
+    await _p!.setString('acct_name', name);
+    notifyListeners();
+  }
+
   Future<void> signOut() async {
     signedIn = false;
     guest = false;

@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'auth.dart';
 import 'screens/add_item_screen.dart';
+import 'screens/auth_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/outfits_screen.dart';
 import 'screens/wardrobe_screen.dart';
 import 'state.dart';
 import 'ui.dart';
-import 'auth.dart';
-import 'screens/auth_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +45,8 @@ class PormadoApp extends StatelessWidget {
   }
 }
 
+/// Shows login until signed in, then the app. Also refreshes weather when
+/// you come back to the app (so it follows you when you relocate).
 class Gate extends StatefulWidget {
   const Gate({super.key});
   @override
@@ -67,17 +70,14 @@ class _GateState extends State<Gate> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!_started) return;
-    if (state == AppLifecycleState.resumed) context.read<AppState>().onResume();
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      context.read<AppState>().flush();
-    }
+    if (state == AppLifecycleState.resumed && _started)
+      context.read<AppState>().onResume();
   }
 
   @override
   Widget build(BuildContext context) {
     final a = context.watch<Auth>();
+    final st = context.watch<AppState>();
     if (!a.loaded) {
       return const Scaffold(
           body: Center(child: CircularProgressIndicator(color: C.green)));
@@ -88,6 +88,11 @@ class _GateState extends State<Gate> with WidgetsBindingObserver {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => context.read<AppState>().init());
     }
+    if (!st.ready) {
+      return const Scaffold(
+          body: Center(child: CircularProgressIndicator(color: C.green)));
+    }
+    if (!st.onboarded) return const OnboardingScreen();
     return const Shell();
   }
 }

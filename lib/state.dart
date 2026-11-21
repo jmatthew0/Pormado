@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'models.dart';
 import 'services/location.dart';
@@ -34,6 +35,16 @@ class AppState extends ChangeNotifier {
   // Wardrobe sort: 0 recently worn, 1 most worn, 2 name, 3 newest
   int sortMode = 0;
   String? todayOverrideId;
+
+  // Settings / onboarding
+  bool ready = false;
+  bool onboarded = false;
+  Set<String> styles = {};
+  bool removeBg = true;
+  bool laundryTracking = true;
+  bool dailyReminder = true;
+  bool rainAlerts = false;
+  String defaultView = 'Grid';
 
   final _rng = Random();
 
@@ -96,6 +107,14 @@ class AppState extends ChangeNotifier {
         sortMode = (s['sortMode'] as int?) ?? sortMode;
         useGps = (s['useGps'] as bool?) ?? useGps;
         draftOccasion = (s['draftOccasion'] as String?) ?? draftOccasion;
+        Units.fahrenheit = (s['fahrenheit'] as bool?) ?? false;
+        onboarded = (s['onboarded'] as bool?) ?? false;
+        styles = Set<String>.from((s['styles'] as List?) ?? const []);
+        removeBg = (s['removeBg'] as bool?) ?? true;
+        laundryTracking = (s['laundryTracking'] as bool?) ?? true;
+        dailyReminder = (s['dailyReminder'] as bool?) ?? true;
+        rainAlerts = (s['rainAlerts'] as bool?) ?? false;
+        defaultView = (s['defaultView'] as String?) ?? 'Grid';
         final cityName = s['city'] as String?;
         for (final c in phCities) {
           if (c.name == cityName) city = c;
@@ -105,6 +124,7 @@ class AppState extends ChangeNotifier {
       // unreadable file: start fresh
     }
     _loaded = true;
+    ready = true;
     notifyListeners();
   }
 
@@ -133,6 +153,14 @@ class AppState extends ChangeNotifier {
           'useGps': useGps,
           'draftOccasion': draftOccasion,
           'city': city.name,
+          'fahrenheit': Units.fahrenheit,
+          'onboarded': onboarded,
+          'styles': styles.toList(),
+          'removeBg': removeBg,
+          'laundryTracking': laundryTracking,
+          'dailyReminder': dailyReminder,
+          'rainAlerts': rainAlerts,
+          'defaultView': defaultView,
         },
       });
     } catch (_) {}
@@ -357,6 +385,7 @@ class AppState extends ChangeNotifier {
 
   void logWear(ClothingItem i, [DateTime? when]) {
     i.worn++;
+    i.wearsSinceWash++;
     i.lastWorn = when ?? DateTime.now();
     notifyListeners();
   }
@@ -446,6 +475,45 @@ class AppState extends ChangeNotifier {
     return out.whereType<ClothingItem>().map((e) => e.id).toSet().toList();
   }
 
+  // ---------- Settings helpers ----------
+  /// Runs [f] then saves and refreshes the UI.
+  void change(VoidCallback f) {
+    f();
+    notifyListeners();
+  }
+
+  void setFahrenheit(bool f) => change(() => Units.fahrenheit = f);
+
+  void finishOnboarding() => change(() => onboarded = true);
+
+  void markWashed(ClothingItem i) => change(() => i.wearsSinceWash = 0);
+
+  void swapPiece(Outfit o, String oldId, String newId) {
+    final idx = o.itemIds.indexOf(oldId);
+    if (idx >= 0) o.itemIds[idx] = newId;
+    notifyListeners();
+  }
+
+  /// Plans a set of pieces for a day. Reuses a matching saved outfit or creates one.
+  void planPieces(DateTime d, List<String> ids, {String occasion = 'Casual'}) {
+    Outfit? match;
+    for (final o in outfits) {
+      if (o.itemIds.length == ids.length && o.itemIds.toSet().containsAll(ids))
+        match = o;
+    }
+    if (match == null) {
+      match = Outfit(
+        id: 'o${DateTime.now().microsecondsSinceEpoch}',
+        name: '${DateFormat('EEE d MMM').format(d)} plan',
+        itemIds: [...ids],
+        occasion: occasion,
+      );
+      outfits.insert(0, match);
+    }
+    plans[dayKey(d)] = match.id;
+    notifyListeners();
+  }
+
   // ---------- Calendar ----------
   void plan(DateTime d, Outfit o) {
     plans[dayKey(d)] = o.id;
@@ -465,8 +533,11 @@ class AppState extends ChangeNotifier {
     plans[k] = o.id;
     for (final i in itemsOf(o)) {
       i.worn++;
+      i.wearsSinceWash++;
       i.lastWorn = d;
     }
+    o.worn++;
+    o.lastWorn = d;
     notifyListeners();
     return true;
   }
